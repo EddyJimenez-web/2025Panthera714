@@ -157,6 +157,7 @@ class Intake(Subsystem):
         speedL, speedF = self.desiredSpeedL, self.desiredSpeedF
         if recoiling:
             speedL, speedF = -self.recoilSpeed, -self.recoilSpeed
+        SmartDashboard.putBoolean("intakeRecoiling", recoiling)
         if self.sensingGamepiece and self.stopIfSensingGamepiece:
             speedL, speedF = 0.0, 0.0
         SmartDashboard.putNumber("intakeDSpeed", self.desiredSpeedL)
