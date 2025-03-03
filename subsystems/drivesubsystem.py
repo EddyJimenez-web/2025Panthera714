@@ -120,9 +120,12 @@ class DriveSubsystem(Subsystem):
                 (0, 0, 0, 0),
                 Pose2d(
                     self._lastOdometryResetPose.translation()
-                    + Translation2d(self.gyro.getDisplacementX(), self.gyro.getDisplacementY()),
+                    + Translation2d(self.gyro.getDisplacementX(), self.gyro.getDisplacementY()).rotateBy(self._lastOdometryResetPose.rotation()),
                     heading
                 ),
+                # alternative implementation:
+                #  it would probably be cleaner to create a Transform2d((0,0,0), _lastOdometryResetPose)
+                #  and to apply it onto Pose2d given by accelerometer displacement and gyro angle
             )
             pose = self.odometry.getPose()
         else:
