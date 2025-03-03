@@ -3,7 +3,7 @@ import typing
 
 import wpilib
 
-from commands2 import Subsystem
+from commands2 import Subsystem, TimedCommandRobot
 from wpimath.filter import SlewRateLimiter
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import (
@@ -23,6 +23,8 @@ import navx
 
 
 class DriveSubsystem(Subsystem):
+    USE_ACCELEROMETER = False
+
     def __init__(self, maxSpeedScaleFactor=None) -> None:
         super().__init__()
         if maxSpeedScaleFactor is not None:
@@ -70,6 +72,10 @@ class DriveSubsystem(Subsystem):
         self._lastGyroAngleTime = 0
         self._lastGyroAngle = 0
         self._lastGyroState = "ok"
+        self._lastOdometryResetPose = Pose2d(0, 0, 0)
+
+        if TimedCommandRobot.isSimulation():
+            self.USE_ACCELEROMETER = False  # not supported in sim yet
 
         # Slew rate filter variables for controlling lateral acceleration
         self.currentTranslationDir = 0.0
@@ -107,15 +113,31 @@ class DriveSubsystem(Subsystem):
             self.simPhysics.periodic()
 
         # Update the odometry in the periodic block
-        pose = self.odometry.update(
-            self.getGyroHeading(),
-            (
-                self.frontLeft.getPosition(),
-                self.frontRight.getPosition(),
-                self.rearLeft.getPosition(),
-                self.rearRight.getPosition(),
-            ),
-        )
+        heading = self.getGyroHeading()
+        if self.USE_ACCELEROMETER:
+            self.odometry.resetPosition(
+                heading,
+                (0, 0, 0, 0),
+                Pose2d(
+                    self._lastOdometryResetPose.translation()
+                    + Translation2d(self.gyro.getDisplacementX(), self.gyro.getDisplacementY()).rotateBy(self._lastOdometryResetPose.rotation()),
+                    heading
+                ),
+                # alternative implementation:
+                #  it would probably be cleaner to create a Transform2d((0,0,0), _lastOdometryResetPose)
+                #  and to apply it onto Pose2d given by accelerometer displacement and gyro angle
+            )
+            pose = self.odometry.getPose()
+        else:
+            pose = self.odometry.update(
+                heading,
+                (
+                    self.frontLeft.getPosition(),
+                    self.frontRight.getPosition(),
+                    self.rearLeft.getPosition(),
+                    self.rearRight.getPosition(),
+                ),
+            )
         SmartDashboard.putNumber("x", pose.x)
         SmartDashboard.putNumber("y", pose.y)
         SmartDashboard.putNumber("heading", pose.rotation().degrees())
@@ -138,20 +160,29 @@ class DriveSubsystem(Subsystem):
 
         """
         self.gyro.reset()
+        self.gyro.resetDisplacement()
         self.gyro.setAngleAdjustment(0)
         self._lastGyroAngleTime = 0
         self._lastGyroAngle = 0
+        self._lastOdometryResetPose = pose
 
-        self.odometry.resetPosition(
-            self.getGyroHeading(),
-            (
-                self.frontLeft.getPosition(),
-                self.frontRight.getPosition(),
-                self.rearLeft.getPosition(),
-                self.rearRight.getPosition(),
-            ),
-            pose,
-        )
+        if self.USE_ACCELEROMETER:
+            self.odometry.resetPosition(
+                self.getGyroHeading(),
+                (0, 0, 0, 0),
+                pose,
+            )
+        else:
+            self.odometry.resetPosition(
+                self.getGyroHeading(),
+                (
+                    self.frontLeft.getPosition(),
+                    self.frontRight.getPosition(),
+                    self.rearLeft.getPosition(),
+                    self.rearRight.getPosition(),
+                ),
+                pose,
+            )
         self.odometryHeadingOffset = self.odometry.getPose().rotation() - self.getGyroHeading()
 
         self.field = Field2d()
