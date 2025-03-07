@@ -27,7 +27,7 @@ class JerkyTrajectory(commands2.Command):
         endpoint: Pose2d | Translation2d | tuple | list | None,
         waypoints: typing.List[Pose2d | Translation2d | tuple | list] = (),
         swerve: bool | str = False,
-        speed=1.0,
+        speed: typing.Callable[[], float] | float = 1.0,
         setup: typing.Optional[typing.Callable[[], None]] = None,
     ):
         """
@@ -47,8 +47,11 @@ class JerkyTrajectory(commands2.Command):
         if endpoint is None:
             assert len(waypoints) > 0, "if endpoint is None, waypoints cannot be empty"
 
-        self.drivetrain = drivetrain
         self.speed = speed
+        if not callable(speed):
+            self.speed = lambda: speed
+
+        self.drivetrain = drivetrain
         self.swerve = swerve
         self.setup = setup
         self.waypoints = [self._makeWaypoint(w) for w in waypoints]
@@ -63,7 +66,7 @@ class JerkyTrajectory(commands2.Command):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup)
+        return JerkyTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, lambda: -self.speed(), self.setup)
 
     def trajectoryToDisplay(self):
         result = []
@@ -79,12 +82,13 @@ class JerkyTrajectory(commands2.Command):
         waypoints = self.getRemainingWaypointsAheadOfUs()
         assert len(waypoints) > 0
         last = len(waypoints) - 1
+        speed = self.speed()
         direction = None
 
         # make the commands connecting the waypoints which remain after skipping
         commands = []
         for index, (point, heading) in enumerate(waypoints):
-            command = self._makeWaypointCommand(point, heading, index == last)
+            command = self._makeWaypointCommand(point, heading, speed, index == last)
             direction = heading
             commands.append(command)
 
@@ -92,7 +96,7 @@ class JerkyTrajectory(commands2.Command):
         if direction is not None:
             degrees = direction.degrees()
             log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"aim: {degrees}")
-            aim = AimToDirection(degrees, speed=self.speed, drivetrain=self.drivetrain).beforeStarting(log)
+            aim = AimToDirection(degrees, speed=speed, drivetrain=self.drivetrain).beforeStarting(log)
             commands.append(aim)
 
         # connect all these commands together and start
@@ -167,15 +171,15 @@ class JerkyTrajectory(commands2.Command):
         # here type(point) is Translation2d and type(heading) is Rotation2d or None
         return point, heading
 
-    def _makeWaypointCommand(self, point, heading, last):
+    def _makeWaypointCommand(self, point, heading, speed, last):
         if not self.swerve or (not last and self.swerve == "last-point"):
             # use arcade drive, if we aren't allowed to use swerve (or not allowed to use swerve for non-end points)
             command = GoToPoint(
-                point.x, point.y, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last
+                point.x, point.y, drivetrain=self.drivetrain, speed=speed, slowDownAtFinish=last
             )
         else:
             command = SwerveToPoint(
-                point.x, point.y, heading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=last, rateLimit=not last
+                point.x, point.y, heading, drivetrain=self.drivetrain, speed=speed, slowDownAtFinish=last, rateLimit=not last
             )
 
         log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"next: {point.x}, {point.y}")
@@ -188,13 +192,14 @@ class SwerveTrajectory(JerkyTrajectory):
         waypoints = self.waypoints[1:]
         waypoints.reverse()
         endpoint = self.waypoints[0]
-        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, -self.speed, self.setup)
+        return SwerveTrajectory(self.drivetrain, endpoint, waypoints, self.swerve, lambda: -self.speed(), self.setup)
 
     def initialize(self):
         if self.setup is not None:
             self.setup()
 
         # skip the waypoints that are already behind
+        speed = self.speed()
         waypoints = self.getRemainingWaypointsAheadOfUs()
         assert len(waypoints) > 0
         endPt, endHeading = waypoints[-1]
@@ -206,7 +211,7 @@ class SwerveTrajectory(JerkyTrajectory):
 
         # Create config for trajectory
         config = TrajectoryConfig(
-            AutoConstants.kMaxSpeedMetersPerSecond * abs(self.speed),
+            AutoConstants.kMaxSpeedMetersPerSecond * abs(speed),
             AutoConstants.kMaxAccelerationMetersPerSecondSquared,
         )
         # Add kinematics to ensure max speed is actually obeyed
@@ -248,7 +253,7 @@ class SwerveTrajectory(JerkyTrajectory):
 
         # If the robot fell behind the trajectory (trajectory speed too high in optimizer), brute-force catch up @ end
         catchup = SwerveToPoint(
-            endPt.x, endPt.y, endHeading, drivetrain=self.drivetrain, speed=self.speed, slowDownAtFinish=True
+            endPt.x, endPt.y, endHeading, drivetrain=self.drivetrain, speed=speed, slowDownAtFinish=True
         ).beforeStarting(
             lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"catchup: {endPt.x}, {endPt.y}")
         )
@@ -257,7 +262,7 @@ class SwerveTrajectory(JerkyTrajectory):
         if endHeading is not None:
             degrees = endHeading.degrees()
             log = lambda: SmartDashboard.putString("command/c" + self.__class__.__name__, f"aim: {degrees}")
-            stop = AimToDirection(degrees, speed=self.speed, drivetrain=self.drivetrain).beforeStarting(log)
+            stop = AimToDirection(degrees, speed=speed, drivetrain=self.drivetrain).beforeStarting(log)
         else:
             stop = InstantCommand(self.drivetrain.stop, self.drivetrain)
 

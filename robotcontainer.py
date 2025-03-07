@@ -15,7 +15,7 @@ import typing
 
 from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import CommandGenericHID
-from wpilib import XboxController
+from wpilib import XboxController, SendableChooser, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
 from commands.elevatorcommands import MoveElevatorAndArm
@@ -363,6 +363,18 @@ class RobotContainer:
         def prepareToBackIntoRightFeeder():
             self.rearCamera.setOnlyTagIds([2, 12])
 
+        # trajectory speed
+        self.trajSpeed = SendableChooser()
+        self.trajSpeed.addOption("0.10", 0.10)
+        self.trajSpeed.addOption("0.14", 0.14)
+        self.trajSpeed.addOption("0.20", 0.20)
+        self.trajSpeed.setDefaultOption("0.28", 0.28)
+        self.trajSpeed.addOption("0.40", 0.40)
+        self.trajSpeed.addOption("0.56", 0.56)
+        self.trajSpeed.addOption("0.75", 0.75)
+        self.trajSpeed.addOption("1.0", 1.0)
+        SmartDashboard.putData("trajSpeed", self.trajSpeed)
+
 
         # now add the trajectories (please replace these with the real ones):
 
@@ -380,7 +392,7 @@ class RobotContainer:
                 (2.641, 5.922, -40),
                 (4.806, 6.943, -90),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -399,7 +411,7 @@ class RobotContainer:
                 (2.641, 5.922, -40),
                 (4.306, 6.643, -75),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -420,7 +432,7 @@ class RobotContainer:
                 (3.777, 1.520, 0.302),
                 (5.045, 1.741, 50.001),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -440,7 +452,7 @@ class RobotContainer:
                 (3.777, 1.520, 0.302),
                 (5.045, 1.741, 50.001),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -458,7 +470,7 @@ class RobotContainer:
                 (1.285, 6.915, -54),
                 (1.641, 5.922, -54),
             ],
-            speed=0.1,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -475,7 +487,7 @@ class RobotContainer:
                 (1.285, 6.915, -54),
                 (1.641, 5.922, -54),
             ],
-            speed=0.1,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -493,7 +505,7 @@ class RobotContainer:
                 (1.285, 1.135, 54.0),
                 (2.201, 1.986, 54.0),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -513,7 +525,7 @@ class RobotContainer:
                 (1.285, 1.135, 54.0),
                 (2.201, 1.986, 54.0),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -533,7 +545,7 @@ class RobotContainer:
                 (5.155, 1.516, 90),
                 (6.402, 2.694, 135),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -553,7 +565,7 @@ class RobotContainer:
                 (4.477, 1.306, 90),
                 (6.482, 2.824, 135),
             ],
-            speed=speed,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoRightFeeder,
         )
         self.trajectoryPicker.addCommands(
@@ -571,7 +583,7 @@ class RobotContainer:
                 (1.285, 6.915, -54),
                 (2.641, 5.922, -40),
             ],
-            speed=0.3,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoLeftFeeder,
         )
 
@@ -589,7 +601,7 @@ class RobotContainer:
                 (1.285, 6.915, -54),
                 (2.641, 5.922, -40),
             ],
-            speed=0.5,
+            speed=self.trajSpeed.getSelected,
             setup=prepareToBackIntoLeftFeeder,
         )
         self.trajectoryPicker.addCommands(
