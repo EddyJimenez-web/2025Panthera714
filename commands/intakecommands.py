@@ -15,6 +15,7 @@ class IntakeGamepiece(commands2.Command):
         self.intake.stop()  # stop at the end
 
     def initialize(self):
+        print("IntakeGamepiece: run")
         self.intake.intakeGamepiece(self.speed)
 
     def isFinished(self) -> bool:
@@ -36,6 +37,7 @@ class IntakeFeedGamepieceForward(commands2.Command):
         self.intake.stop()  # stop at the end
 
     def initialize(self):
+        print("IntakeFeedFwd: run")
         self.intake.feedGamepieceForward(self.speed, self.speed2)
 
     def isFinished(self) -> bool:
@@ -58,6 +60,7 @@ class IntakeEjectGamepieceBackward(commands2.Command):
         self.intake.stop()  # stop at the end
 
     def initialize(self):
+        print("IntakeEjectBack: run")
         self.intake.ejectGamepieceBackward(self.speed, self.speed2)
 
     def isFinished(self) -> bool:
