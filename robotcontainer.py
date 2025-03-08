@@ -66,7 +66,9 @@ class RobotContainer:
 
         self.rangefinder = TimeOfFlight(DriveConstants.kIntakeRangefinderCanId)
         self.rangefinder.setRangingMode(TimeOfFlight.RangingMode.kShort, 24)
-        self.rangefinder.setRangeOfInterest(0, 0, 16, 16)
+
+        lidarWindow = 4  # 8 = widest, 1 = tightest
+        self.rangefinder.setRangeOfInterest(8 - lidarWindow, 8 - lidarWindow, 8 + lidarWindow, 8 + lidarWindow)
 
         self.intake = Intake(
             leaderCanID=DriveConstants.kIntakeLeadMotorCanId,
