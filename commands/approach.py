@@ -182,27 +182,29 @@ class ApproachTag(commands2.Command):
         rotationSpeed, degreesLeftToRotate = self.getGyroBasedRotationSpeed()
 
         # 2. how far from the glide path? (and recommended translation speed)
-        fwdSpeed, leftSpeed, distanceToGlidePath = self.getVisionBasedSwerveVelocity(now)
+        fwdSpeed, leftSpeed, distanceToGlidePath = self.getVisionBasedSwerveSpeed(now)
 
         # 3. have we reached the glide path?
         if self.hasReachedGlidePath(degreesLeftToRotate, distanceToGlidePath):
             if self.tReachedGlidePath == 0:
-                SmartDashboard.putString("command/c" + self.__class__.__name__, "reached glide path")
                 self.tReachedGlidePath = now
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "reached glide path")
 
         # 4. be careful with forward speed
         if self.tReachedFinalApproach:
             # - if we are on final approach, completely ignore the fwdSpeed from the visual estimation
             completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
             fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
-            if self.reverse:
-                fwdSpeed = -fwdSpeed
         else:
             # - if we are very far from desired heading, scale that fwdSpeed down
             farFromDesiredHeading = abs(degreesLeftToRotate) / self.DESIRED_HEADING_RADIUS
             fwdSpeed *= max((0.0, 1.0 - farFromDesiredHeading))
 
-        self.drivetrain.drive(fwdSpeed, leftSpeed, rotationSpeed, fieldRelative=False, rateLimit=False)
+        # 5. drive!
+        if self.reverse:
+            self.drivetrain.drive(-fwdSpeed, -leftSpeed, rotationSpeed, fieldRelative=False, rateLimit=False)
+        else:
+            self.drivetrain.drive(fwdSpeed, leftSpeed, rotationSpeed, fieldRelative=False, rateLimit=False)
 
 
     def localize(self):
@@ -245,7 +247,7 @@ class ApproachTag(commands2.Command):
         return turnSpeed, degreesRemaining
 
 
-    def getVisionBasedSwerveVelocity(self, now):
+    def getVisionBasedSwerveSpeed(self, now):
         direction = self.getVisionBasedSwerveDirection(now)
         if direction is None:
             return 0.0, 0.0, None
@@ -270,10 +272,7 @@ class ApproachTag(commands2.Command):
             yVelocity *= factor
 
         # done
-        if self.reverse:
-            return -xVelocity, -yVelocity, abs(direction.y)
-        else:
-            return xVelocity, yVelocity, abs(direction.y)
+        return xVelocity, yVelocity, abs(direction.y)
 
 
     def getVisionBasedSwerveDirection(self, now):
