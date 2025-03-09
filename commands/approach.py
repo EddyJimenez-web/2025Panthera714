@@ -147,33 +147,6 @@ class ApproachTag(commands2.Command):
             SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
 
-    def updateVision(self, now):
-        # TODO: different logic for sim here please
-
-        # non-sim logic:
-        if self.camera.hasDetection():
-            x = self.camera.getX()
-            a = self.camera.getA()
-            if x != 0 and a > 0:
-                self.lastSeenDistanceToTag = self.computeTagDistanceFromTagSizeOnFrame(a)
-                self.lastSeenObjectTime = now
-                self.lastSeenObjectSize = a
-                self.lastSeenObjectX = x
-                self.everSawObject = True
-
-        timeSinceLastHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
-        if timeSinceLastHeartbeat > self.frameTimeoutSeconds:
-            self.lostTag = f"no camera heartbeat > {int(1000 * timeSinceLastHeartbeat)}ms"
-
-        if self.lastSeenObjectTime != 0:
-            timeSinceLastDetection = now - self.lastSeenObjectTime
-            if timeSinceLastDetection > self.detectionTimeoutSeconds:
-                if self.tReachedFinalApproach == 0:
-                    self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms before final approach"
-                elif timeSinceLastDetection > self.detectionTimeoutSeconds + self.finalApproachSeconds:
-                    self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms on final approach"
-
-
     def execute(self):
         # 0. look at the camera
         now = Timer.getFPGATimestamp()
@@ -213,22 +186,6 @@ class ApproachTag(commands2.Command):
             self.drivetrain.drive(-fwdSpeed, -leftSpeed, rotationSpeed, fieldRelative=False, rateLimit=False)
         else:
             self.drivetrain.drive(fwdSpeed, leftSpeed, rotationSpeed, fieldRelative=False, rateLimit=False)
-
-
-    def localize(self):
-        """
-        localize the robot in the frame of the final approach point
-        (i.e. final approach point is assumed to be at (x, y) = (0, 0), tag is assumed to be at (x, y) = (d, 0))
-        :return: (x, y, d), where `x,y` are coordinates of the robot and `d` is distance between that point and tag
-        """
-        distanceToTag = self.lastSeenDistanceToTag
-
-        # trigonometry: how many meters on the left is our tag? (if negative, then it's on the right)
-        angle = Rotation2d.fromDegrees(self.lastSeenObjectX)
-        y = -distanceToTag * angle.sin()
-
-        distanceToFinalApproach = distanceToTag - self.tagToFinalApproachPt
-        return -distanceToFinalApproach, -y, self.tagToFinalApproachPt
 
 
     def getGyroBasedRotationSpeed(self):
@@ -309,6 +266,22 @@ class ApproachTag(commands2.Command):
         return direction
 
 
+    def localize(self):
+        """
+        localize the robot camera in the frame of the final approach point
+        (i.e. final approach point is assumed to be at (x, y) = (0, 0), tag is assumed to be at (x, y) = (d, 0))
+        :return: (x, y, d), where `x,y` are coordinates of the robot and `d` is distance between that point and tag
+        """
+        distanceToTag = self.lastSeenDistanceToTag
+
+        # trigonometry: how many meters on the left is our tag? (if negative, then it's on the right)
+        angle = Rotation2d.fromDegrees(self.lastSeenObjectX)
+        y = -distanceToTag * angle.sin()
+
+        distanceToFinalApproach = distanceToTag - self.tagToFinalApproachPt
+        return -distanceToFinalApproach, -y, self.tagToFinalApproachPt
+
+
     def computeProportionalSpeed(self, distance) -> float:
         velocity = distance * GoToPointConstants.kPTranslate * self.KPMULT_TRANSLATION
         if GoToPointConstants.kUseSqrtControl:
@@ -336,4 +309,32 @@ class ApproachTag(commands2.Command):
         if self.tReachedGlidePath and not reachedNow:
             print(f"WARNING: not on glide path anymore (distance={distanceToGlidePath}, degrees={degreesLeftToRotate}")
         return reachedNow
+
+
+
+    def updateVision(self, now):
+        # TODO: different logic for sim here please
+
+        # non-sim logic:
+        if self.camera.hasDetection():
+            x = self.camera.getX()
+            a = self.camera.getA()
+            if x != 0 and a > 0:
+                self.lastSeenDistanceToTag = self.computeTagDistanceFromTagSizeOnFrame(a)
+                self.lastSeenObjectTime = now
+                self.lastSeenObjectSize = a
+                self.lastSeenObjectX = x
+                self.everSawObject = True
+
+        timeSinceLastHeartbeat = self.camera.getSecondsSinceLastHeartbeat()
+        if timeSinceLastHeartbeat > self.frameTimeoutSeconds:
+            self.lostTag = f"no camera heartbeat > {int(1000 * timeSinceLastHeartbeat)}ms"
+
+        if self.lastSeenObjectTime != 0:
+            timeSinceLastDetection = now - self.lastSeenObjectTime
+            if timeSinceLastDetection > self.detectionTimeoutSeconds:
+                if self.tReachedFinalApproach == 0:
+                    self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms before final approach"
+                elif timeSinceLastDetection > self.detectionTimeoutSeconds + self.finalApproachSeconds:
+                    self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms on final approach"
 
