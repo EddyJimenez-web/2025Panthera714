@@ -148,6 +148,9 @@ class ApproachTag(commands2.Command):
 
 
     def updateVision(self, now):
+        # TODO: different logic for sim here please
+
+        # non-sim logic:
         if self.camera.hasDetection():
             x = self.camera.getX()
             a = self.camera.getA()
@@ -162,17 +165,18 @@ class ApproachTag(commands2.Command):
         if timeSinceLastHeartbeat > self.frameTimeoutSeconds:
             self.lostTag = f"no camera heartbeat > {int(1000 * timeSinceLastHeartbeat)}ms"
 
-        timeSinceLastDetection = now - self.lastSeenObjectTime
-        if timeSinceLastDetection > self.detectionTimeoutSeconds:
-            if self.tReachedFinalApproach == 0:
-                self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms before final approach"
-            elif timeSinceLastDetection > self.detectionTimeoutSeconds + self.finalApproachSeconds:
-                self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms on final approach"
+        if self.lastSeenObjectTime != 0:
+            timeSinceLastDetection = now - self.lastSeenObjectTime
+            if timeSinceLastDetection > self.detectionTimeoutSeconds:
+                if self.tReachedFinalApproach == 0:
+                    self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms before final approach"
+                elif timeSinceLastDetection > self.detectionTimeoutSeconds + self.finalApproachSeconds:
+                    self.lostTag = f"object lost for {int(1000 * timeSinceLastDetection)}ms on final approach"
 
 
     def execute(self):
+        # 0. look at the camera
         now = Timer.getFPGATimestamp()
-
         self.updateVision(now)
         if self.lostTag:
             self.drivetrain.stop()
@@ -195,6 +199,10 @@ class ApproachTag(commands2.Command):
             # - if we are on final approach, completely ignore the fwdSpeed from the visual estimation
             completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
             fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
+        elif now > self.lastSeenObjectTime + 0.5 * self.frameTimeoutSeconds:
+            # - rare: if the object on the frame is not fresh, maybe it escaped to right or left, so move sideways only
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "tag not fresh, moving sideways")
+            fwdSpeed = 0.0
         else:
             # - if we are very far from desired heading, scale that fwdSpeed down
             farFromDesiredHeading = abs(degreesLeftToRotate) / self.DESIRED_HEADING_RADIUS
@@ -278,11 +286,8 @@ class ApproachTag(commands2.Command):
     def getVisionBasedSwerveDirection(self, now):
         # can we trust the last seen object?
         if not (self.lastSeenObjectSize > 0):
-            SmartDashboard.putString("command/c" + self.__class__.__name__, "never acquired")
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "never seen")
             return None  # the object is not yet there, hoping that this is temporary
-        elif now > self.lastSeenObjectTime + 0.5 * self.frameTimeoutSeconds:
-            SmartDashboard.putString("command/c" + self.__class__.__name__, "not fresh")
-            return None  # the object on the frame is not fresh
 
         # where are we?
         robotX, robotY, tagX = self.localize()
