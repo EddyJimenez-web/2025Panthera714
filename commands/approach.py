@@ -301,6 +301,7 @@ class ApproachTag(commands2.Command):
         """
         return math.sqrt(0.2 * 0.2 / (1.33 * 0.01 * objectSizePercent))
 
+
     def hasReachedGlidePath(self, degreesLeftToRotate: float, distanceToGlidePath: float) -> bool:
         reachedNow = (
                 abs(degreesLeftToRotate) < 2 * AimToDirectionConstants.kAngleToleranceDegrees and
@@ -311,10 +312,7 @@ class ApproachTag(commands2.Command):
         return reachedNow
 
 
-
     def updateVision(self, now):
-        # TODO: different logic for sim here please
-
         # non-sim logic:
         if self.camera.hasDetection():
             x = self.camera.getX()
