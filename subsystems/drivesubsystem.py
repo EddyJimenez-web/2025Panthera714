@@ -2,10 +2,11 @@ import math
 import typing
 
 import wpilib
+import wpimath.units
 
 from commands2 import Subsystem
 from wpimath.filter import SlewRateLimiter
-from wpimath.geometry import Pose2d, Rotation2d, Translation2d
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d, Transform2d
 from wpimath.kinematics import (
     ChassisSpeeds,
     SwerveModuleState,
@@ -67,8 +68,8 @@ class DriveSubsystem(Subsystem):
 
         # The gyro sensor
         self.gyro = navx.AHRS.create_spi()
-        self._lastGyroAngleTime = 0
-        self._lastGyroAngle = 0
+        self._lastGyroPoseTime = 0
+        self._lastGyroPose = (0.0, 0.0, 0.0)
         self._lastGyroState = "ok"
 
         # Slew rate filter variables for controlling lateral acceleration
@@ -139,9 +140,10 @@ class DriveSubsystem(Subsystem):
         """
         if resetGyro:
             self.gyro.reset()
+            self.gyro.resetDisplacement()
             self.gyro.setAngleAdjustment(0)
-            self._lastGyroAngleTime = 0
-            self._lastGyroAngle = 0
+            self._lastGyroPoseTime = 0
+            self._lastGyroPose = 0
 
         self.odometry.resetPosition(
             self.getGyroHeading(),
@@ -155,8 +157,7 @@ class DriveSubsystem(Subsystem):
         )
         self.odometryHeadingOffset = self.odometry.getPose().rotation() - self.getGyroHeading()
 
-        self.field = Field2d()
-        SmartDashboard.putData("Field", self.field)
+        self.imuToPose = Transform2d(self.getImuPose(), pose)
 
 
     def adjustOdometry(self, dTrans: Translation2d, dRot: Rotation2d):
@@ -348,13 +349,29 @@ class DriveSubsystem(Subsystem):
         self.frontRight.resetEncoders()
         self.rearRight.resetEncoders()
 
+
     def getGyroHeading(self) -> Rotation2d:
         """Returns the heading of the robot, tries to be smart when gyro is disconnected
 
         :returns: the robot's heading as Rotation2d
         """
+        self.updateImuPose()
+        return Rotation2d.fromDegrees(self._lastGyroPose[2] * DriveConstants.kGyroReversed)
+
+
+    def getImuPose(self) -> Pose2d:
+        """Returns the pose of the robot according to its gyro+accelerometer (IMU)
+
+        :returns: the robot's pose as Pose2d
+        """
+        self.updateImuPose()
+        p = self._lastGyroPose
+        return Pose2d(p[0], p[1], wpimath.units.degreesToRadians(p[2]) * DriveConstants.kGyroReversed)
+
+
+    def updateImuPose(self) -> None:
         now = wpilib.Timer.getFPGATimestamp()
-        past = self._lastGyroAngleTime
+        past = self._lastGyroPoseTime
         state = "ok"
 
         if not self.gyro.isConnected():
@@ -362,14 +379,12 @@ class DriveSubsystem(Subsystem):
         else:
             if self.gyro.isCalibrating():
                 state = "calibrating"
-            self._lastGyroAngle = self.gyro.getAngle()
-            self._lastGyroAngleTime = now
+            self._lastGyroPose = (self.gyro.getDisplacementX(), self.gyro.getDisplacementY(), self.gyro.getAngle())
+            self._lastGyroPoseTime = now
 
         if state != self._lastGyroState:
             SmartDashboard.putString("gyro", f"{state} after {int(now - past)}s")
             self._lastGyroState = state
-
-        return Rotation2d.fromDegrees(self._lastGyroAngle * DriveConstants.kGyroReversed)
 
 
     def getTurnRate(self) -> float:
