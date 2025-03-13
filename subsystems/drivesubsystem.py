@@ -14,7 +14,6 @@ from wpimath.kinematics import (
     SwerveDrive4Odometry,
 )
 from wpilib import SmartDashboard, Field2d
-from wpimath.units import dynes
 
 from constants import DriveConstants, ModuleConstants
 import swerveutils
@@ -146,6 +145,7 @@ class DriveSubsystem(Subsystem):
         """Resets the odometry to the specified pose.
 
         :param pose: The pose to which to set the odometry.
+        :param resetGyro: Should the IMU (device) be reset too? (this will move the direction of swerve front)
 
         """
         if resetGyro:
