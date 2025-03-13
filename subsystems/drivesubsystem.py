@@ -24,6 +24,8 @@ import navx
 
 
 class DriveSubsystem(Subsystem):
+    USE_IMU_POSE = True
+
     def __init__(self, maxSpeedScaleFactor=None) -> None:
         super().__init__()
         if maxSpeedScaleFactor is not None:
@@ -95,6 +97,8 @@ class DriveSubsystem(Subsystem):
             ),
         )
         self.odometryHeadingOffset = Rotation2d(0)
+        self.imuToPose = Transform2d(0, 0, 0)
+
         self.resetOdometry(Pose2d(0, 0, 0))
 
         self.field = Field2d()
@@ -122,15 +126,21 @@ class DriveSubsystem(Subsystem):
         SmartDashboard.putNumber("heading", pose.rotation().degrees())
         self.field.setRobotPose(pose)
 
+
     def getHeading(self) -> Rotation2d:
         return self.getPose().rotation()
+
 
     def getPose(self) -> Pose2d:
         """Returns the currently-estimated pose of the robot.
 
         :returns: The pose.
         """
-        return self.odometry.getPose()
+        if self.USE_IMU_POSE:
+            return self.getImuPose().transformBy(self.imuToPose)
+        else:
+            return self.odometry.getPose()
+
 
     def resetOdometry(self, pose: Pose2d, resetGyro=True) -> None:
         """Resets the odometry to the specified pose.
@@ -142,8 +152,12 @@ class DriveSubsystem(Subsystem):
             self.gyro.reset()
             self.gyro.resetDisplacement()
             self.gyro.setAngleAdjustment(0)
+            self._lastGyroPose = (0.0, 0.0, 0.0)
             self._lastGyroPoseTime = 0
-            self._lastGyroPose = 0
+
+        # this line will have the effect we wanted *only* if gyro was connected at the time
+        # (if it wasn't, probably need to move the deferred version of this logic to periodic())
+        self.imuToPose = Transform2d(self.getImuPose(), pose)
 
         self.odometry.resetPosition(
             self.getGyroHeading(),
@@ -157,21 +171,26 @@ class DriveSubsystem(Subsystem):
         )
         self.odometryHeadingOffset = self.odometry.getPose().rotation() - self.getGyroHeading()
 
-        self.imuToPose = Transform2d(self.getImuPose(), pose)
-
 
     def adjustOdometry(self, dTrans: Translation2d, dRot: Rotation2d):
-        pose = self.getPose()
-        newPose = Pose2d(pose.translation() + dTrans, pose.rotation() + dRot)
+        # adjust the IMU position transform
+        imuPose = self.getImuPose()
+        oldImuPose = imuPose.transformBy(self.imuToPose)
+        newImuPose = Pose2d(oldImuPose.translation() + dTrans, oldImuPose.rotation() + dRot)
+        self.imuToPose = Transform2d(imuPose, newImuPose)
+
+        # and adjust the odometry
+        oldOdoPose = self.getPose()
+        newOdoPose = Pose2d(oldOdoPose.translation() + dTrans, oldOdoPose.rotation() + dRot)
         self.odometry.resetPosition(
-            pose.rotation() - self.odometryHeadingOffset,
+            oldOdoPose.rotation() - self.odometryHeadingOffset,
             (
                 self.frontLeft.getPosition(),
                 self.frontRight.getPosition(),
                 self.rearLeft.getPosition(),
                 self.rearRight.getPosition(),
             ),
-            newPose,
+            newOdoPose,
         )
         self.odometryHeadingOffset += dRot
 
