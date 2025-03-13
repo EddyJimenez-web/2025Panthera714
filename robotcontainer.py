@@ -61,9 +61,6 @@ class RobotContainer:
         self.frontLeftCamera = PhotonTagCamera("Arducam_Front")
         self.rearCamera = PhotonTagCamera("Arducam_Rear")
 
-        # camera to use for aligning with april tag
-        self.camera = self.frontRightCamera
-
         from subsystems.intake import Intake
         from playingwithfusion import TimeOfFlight
 
@@ -321,7 +318,8 @@ class RobotContainer:
         # self.driverController.povUp().whileTrue(self.trajectoryPicker)
 
         # POV up: align with april tag
-        self.driverController.povUp().whileTrue(self.makeAlignWithAprilTagCommand())
+        cameraForAligning = self.frontRightCamera   # camera to use for aligning with april tag
+        self.driverController.povUp().whileTrue(self.makeAlignWithAprilTagCommand(cameraForAligning))
 
         # POV left+right: pick trajectory
         self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
@@ -665,17 +663,17 @@ class RobotContainer:
         vision = alignWRightCam.andThen(moveBack).andThen(alignWLeftCam).andThen(alignWBackCam)
         return movement.andThen(vision)
 
-    def makeAlignWithAprilTagCommand(self):
+    def makeAlignWithAprilTagCommand(self, camera):
         from commands.setcamerapipeline import SetCameraPipeline
         from commands.followobject import FollowObject, StopWhen
         from commands.approach import ApproachTag
         from commands.swervetopoint import SwerveToSide
 
         # switch to camera pipeline 3, to start looking for certain kind of AprilTags
-        lookForTheseTags = SetCameraPipeline(self.camera, 3)
-        approachTheTag = FollowObject(self.camera, self.robotDrive, stopWhen=StopWhen(maxSize=4),
+        lookForTheseTags = SetCameraPipeline(camera, 3)
+        approachTheTag = FollowObject(camera, self.robotDrive, stopWhen=StopWhen(maxSize=4),
                                       speed=0.3)  # stop when tag size=4 (4% of the frame pixels)
-        alignAndPush = ApproachTag(self.camera, self.robotDrive, None, speed=1.0,
+        alignAndPush = ApproachTag(camera, self.robotDrive, None, speed=1.0,
                                    pushForwardSeconds=None)  # tuning this at speed=0.5, should be comfortable setting speed=1.0 instead
 
         # connect them together
