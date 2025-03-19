@@ -15,7 +15,7 @@ class ElevatorConstants:
     absoluteEncoderInverted = False
 
     # if using relative encoder, how many motor revolutions are needed to move the elevator by one inch?
-    GEAR_RATIO = 25
+    GEAR_RATIO = 9
     GEAR_DIAMETER = 2.0
     motorRevolutionsPerInch = GEAR_RATIO / (GEAR_DIAMETER * math.pi)
 
