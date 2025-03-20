@@ -309,12 +309,12 @@ class RobotContainer:
 
             self.driverController.button(XboxController.Button.kX).whileTrue(
                self.approachReef(
-                   self.frontRightCamera, pushForwardSeconds=0.8, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                   self.frontRightCamera, pushForwardSeconds=0.99, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                )
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.approachReef(
-                    self.frontLeftCamera, pushForwardSeconds=0.6, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                    self.frontLeftCamera, pushForwardSeconds=0.75, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                 )
             )
             self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
@@ -754,7 +754,8 @@ class RobotContainer:
 
 
     def approachReef(self, camera, desiredHeading=None, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
-        pushForwardMinDistance = 0.27
+        pushForwardMinDistance = 0.20
+        settings = {"GainTran": 0.63}
 
         def roundToMultipleOf60():
             # angles like 110 will be rounded to nearest multiple of 60, in this case 120
@@ -769,6 +770,7 @@ class RobotContainer:
                 camera,
                 self.robotDrive,
                 specificHeadingDegrees=desiredHeading,
+                settings=settings,
                 pushForwardSeconds=pushForwardSeconds,
                 pushForwardMinDistance=pushForwardMinDistance,
                 finalApproachObjSize=finalApproachObjSize
@@ -783,6 +785,7 @@ class RobotContainer:
             camera,
             self.robotDrive,
             specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
+            settings=settings,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
@@ -794,6 +797,7 @@ class RobotContainer:
             camera,
             self.robotDrive,
             specificHeadingDegrees=aimLike1811.getChosenHeadingDegrees,
+            settings=settings,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
@@ -804,6 +808,7 @@ class RobotContainer:
         approachAnyTag = pickAnyTag.andThen(ApproachTag(camera,
             self.robotDrive,
             specificHeadingDegrees=roundToMultipleOf60,
+            settings=settings,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
@@ -820,7 +825,7 @@ class RobotContainer:
         return command
 
 
-    def approachFeeder(self, pushForwardSeconds=0.07):
+    def approachFeeder(self, pushForwardSeconds=0.1):
 
         def desiredHeadingBackingToFeeder():
             angle = self.robotDrive.getHeading().degrees()
@@ -836,7 +841,7 @@ class RobotContainer:
             reverse=True,
             settings={"GainTran": 1.0},
             pushForwardSeconds=pushForwardSeconds,
-            pushForwardMinDistance=0.25,
+            pushForwardMinDistance=0.4,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
         )
