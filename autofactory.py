@@ -178,8 +178,8 @@ class AutoFactory(object):
         # how to drive between waypoints? (like a tank, like a frog, or what)
         self.autoTrajStyle = SendableChooser()
         self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
-        self.autoTrajStyle.setDefaultOption("dog", (JerkyTrajectory, True))
-        self.autoTrajStyle.addOption("eagle", (SwerveTrajectory, True))
+        self.autoTrajStyle.addOption("dog", (JerkyTrajectory, True))
+        self.autoTrajStyle.setDefaultOption("eagle", (SwerveTrajectory, True))
 
         # driving speed
         self.autoDrvSpeed = SendableChooser()
@@ -396,13 +396,14 @@ class AutoFactory(object):
 
 
     @staticmethod
-    def approachReef(self, headingTags, height, branch="right", pushFwdSeconds=0.8, speed=1.0, traj=None):
+    def approachReef(self, headingTags, height, branch="right", pushFwdSeconds=0.9, pushFwdMinDistance=0.20, speed=1.0, traj=None):
         headingDegrees, tags = headingTags
         assert len(tags) > 0
 
         # which camera do we use? depends whether we aim for "right" or "left" branch
         assert branch in ("right", "left")
         camera = self.frontLeftCamera if branch == "right" else self.frontRightCamera
+        settings = {"GainTran": 0.63}
 
         # limelight is slower
         if branch == "left":
@@ -416,7 +417,9 @@ class AutoFactory(object):
             self.robotDrive,
             headingDegrees,
             speed=speed,
+            settings=settings,
             pushForwardSeconds=pushFwdSeconds,
+            pushForwardMinDistance=pushFwdMinDistance,
             dashboardName="auto",
         )
 
@@ -454,8 +457,9 @@ class AutoFactory(object):
             headingDegrees,
             speed=speed,
             reverse=True,
-            settings={"GainTran": 1.1},
-            pushForwardSeconds=0.01, # 0.25 was calibrated for GainTran=0.7
+            settings={"GainTran": 1.0},
+            pushForwardSeconds=0.1, # 0.25 was calibrated for GainTran=0.7
+            pushForwardMinDistance=0.40,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="abck",
         )

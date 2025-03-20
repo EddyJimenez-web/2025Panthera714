@@ -237,7 +237,7 @@ class Localizer(commands2.Subsystem):
         self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
     ):
         ta = tag.getArea()
-        if ta < 0.25:
+        if ta < 0.5:
             return None
 
         tagId = tag.getFiducialId()
