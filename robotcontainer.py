@@ -814,7 +814,7 @@ class RobotContainer:
         return command
 
 
-    def approachFeeder(self, pushForwardSeconds=0.1):
+    def approachFeeder(self, pushForwardSeconds=0.07):
 
         def desiredHeadingBackingToFeeder():
             angle = self.robotDrive.getHeading().degrees()
@@ -830,6 +830,7 @@ class RobotContainer:
             reverse=True,
             settings={"GainTran": 1.0},
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=0.25,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
         )
