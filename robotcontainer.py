@@ -754,6 +754,8 @@ class RobotContainer:
 
 
     def approachReef(self, camera, desiredHeading=None, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
+        pushForwardMinDistance = 0.27
+
         def roundToMultipleOf60():
             # angles like 110 will be rounded to nearest multiple of 60, in this case 120
             angle = self.robotDrive.getHeading().degrees()
@@ -768,6 +770,7 @@ class RobotContainer:
                 self.robotDrive,
                 specificHeadingDegrees=desiredHeading,
                 pushForwardSeconds=pushForwardSeconds,
+                pushForwardMinDistance=pushForwardMinDistance,
                 finalApproachObjSize=finalApproachObjSize
             )
 
@@ -781,6 +784,7 @@ class RobotContainer:
             self.robotDrive,
             specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
         ))
 
@@ -791,6 +795,7 @@ class RobotContainer:
             self.robotDrive,
             specificHeadingDegrees=aimLike1811.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
         ))
 
@@ -800,6 +805,7 @@ class RobotContainer:
             self.robotDrive,
             specificHeadingDegrees=roundToMultipleOf60,
             pushForwardSeconds=pushForwardSeconds,
+            pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
         ))
 
