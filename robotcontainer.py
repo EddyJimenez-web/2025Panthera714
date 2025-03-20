@@ -360,7 +360,7 @@ class RobotContainer:
         levelA2PosButton = self.driverController.button(XboxController.Button.kY)
         levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator,
                                                 position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm,
-                                                angle=ArmConstants.kArmAlgaeIntakeAngle, intake=self.intake)
+                                                angle=ArmConstants.kArmAlgaeIntakeAngle)
         levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
 
 
