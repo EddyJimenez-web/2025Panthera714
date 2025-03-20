@@ -334,20 +334,20 @@ class RobotContainer:
         # (in game manual there are levels 2, 3 and 4)
         #  - 2
         level2PosButton = self.scoringController.button(XboxController.Button.kB)
-        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=5.0, arm=self.arm,
-                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
+        level2PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=6.0, arm=self.arm,
+                                               angle=ArmConstants.kArmSafeTravelAngle)
         level2PosButton.onTrue(level2PositionCmd)
         self.trajectoryBoard.button(2).onTrue(level2PositionCmd)
         #  - 3
         level3PosButton = self.scoringController.button(XboxController.Button.kY)
-        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=14.0, arm=self.arm,
-                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
+        level3PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=15.0, arm=self.arm,
+                                               angle=ArmConstants.kArmSafeTravelAngle)
         level3PosButton.onTrue(level3PositionCmd)
         self.trajectoryBoard.button(3).onTrue(level3PositionCmd)
         #  - 4
         level4PosButton = self.scoringController.button(XboxController.Button.kX)
         level4PositionCmd = MoveElevatorAndArm(elevator=self.elevator, position=30.0, arm=self.arm,
-                                               angle=ArmConstants.kArmSafeTravelAngle, intake=self.intake)
+                                               angle=ArmConstants.kArmSafeTravelAngle)
         level4PosButton.onTrue(level4PositionCmd)
         self.trajectoryBoard.button(4).onTrue(level4PositionCmd)
         #  - algae 1 (driver controller "A" button)
