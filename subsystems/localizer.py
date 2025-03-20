@@ -28,7 +28,7 @@ class CameraState:
 
 class Localizer(commands2.Subsystem):
     LEARNING_RATE = 0.1  # to converge faster you may want to increase this, but location can become more unstable
-    ONLY_WORK_IF_SEEING_MULTIPLE_TAGS = False  # avoid making adjustments to odometry if only one tag is seen
+    ONLY_WORK_IF_SEEING_MULTIPLE_TAGS = True  # avoid making adjustments to odometry if only one tag is seen
     TAG_TOO_CLOSE_METERS = 1.0  # tags closer than 1 meter won't cause bigger impact on (X, Y) update
 
     TRUST_GYRO_COMPLETELY = True  # if you set it =True, odometry heading (North) will never be modified
@@ -205,11 +205,11 @@ class Localizer(commands2.Subsystem):
                 odometryAdjustment = self.calculateMegaTag2_OdometryAdjustment(
                     camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
-                if odometryAdjustment is not None:
-                    odometryAdjustment = self.calculateIntersectionOdometryAdjustment(
-                        camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
+                #if odometryAdjustment is None and ready:
+                #    odometryAdjustment = self.calculateIntersectionOdometryAdjustment(
+                #        camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate)
 
-                if enabled and ready and (odometryAdjustment is not None):
+                if enabled and (odometryAdjustment is not None):
                     shift, turn = odometryAdjustment
                     self.drivetrain.adjustOdometry(shift, turn)
 
@@ -237,7 +237,7 @@ class Localizer(commands2.Subsystem):
         self, camera, redrawing, robotDirection2d, robotLocation2d, tag, tagFieldPosition, flipped, learningRate
     ):
         ta = tag.getArea()
-        if ta < 0.5:
+        if ta < 0.25:
             return None
 
         tagId = tag.getFiducialId()
@@ -376,7 +376,7 @@ class Localizer(commands2.Subsystem):
             # ^^ power 1, because the biggest cause will be systematic errors (uncalibrated camera angle or location)
 
         # for intersection localization, use lower learning rate
-        learningRate *= 0.05
+        learningRate *= 0.005
 
         # adjust the (X, Y) in the drivetrain odometry
         shift = shiftMeters * learningRate
