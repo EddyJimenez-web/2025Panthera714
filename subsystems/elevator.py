@@ -277,8 +277,6 @@ class Elevator(Subsystem):
         # 2. do we need to find zero?
         if not self.zeroFound:
             self.findZero()
-        elif self.reverseLimit.get() and not self.forwardLimit.get():
-            self.relativeEncoder.setPosition(0.0)  # reset the relative encoder again! (chain slipped?)
 
         # 3. report to the dashboard
         SmartDashboard.putString("elevStopReason", self.stopReason)
