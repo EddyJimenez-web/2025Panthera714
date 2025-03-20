@@ -314,7 +314,7 @@ class RobotContainer:
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.approachReef(
-                    self.frontLeftCamera, pushForwardSeconds=0.75, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                    self.frontLeftCamera, pushForwardSeconds=0.85, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                 )
             )
             self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
@@ -404,11 +404,11 @@ class RobotContainer:
         self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
-        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5)
+        backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5, slowDownAtFinish=False)
 
         #armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         #reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker.alongWith(armDown))
-        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker)
+        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker).andThen(self.approachFeeder())
 
         # (when button is pushed, first back up safely and then drive the reverse trajectory)
 
@@ -459,6 +459,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.394, 5.83, -120),
             waypoints=[
+                (1.835, 6.265, -54),
                 (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.806, 6.243, -90),
@@ -478,6 +479,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(4.96, 5.81, -120),
             waypoints=[
+                (1.835, 6.265, -54),
                 (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.306, 6.243, -75),
@@ -610,7 +612,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.70, 3.85, 180)),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (5.155, 1.916, 90),
@@ -631,7 +633,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.70, 4.20, 180)),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (4.477, 1.906, 90),
@@ -652,7 +654,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(3.400, 5.546, -60.0),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
@@ -670,7 +672,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(3.270, 5.446, -60.0),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
