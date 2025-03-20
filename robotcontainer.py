@@ -839,4 +839,4 @@ class RobotContainer:
             metersToTheLeft=0, metersBackwards=0.2, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False
         )
 
-        return pipeline.andThen(moveBack).andThen(command).withTimeout(10)
+        return pipeline.andThen(command).withTimeout(10)
