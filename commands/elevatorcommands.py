@@ -86,7 +86,6 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
                  position: float,
                  arm: Arm,
                  angle: float | None=None,
-                 intake=None,
                  safeTravelAngle=ArmConstants.kArmSafeTravelAngle,
                  additionalTimeoutSeconds=0.0):
         self.arm = arm
@@ -115,12 +114,8 @@ class MoveElevatorAndArm(commands2.SequentialCommandGroup):
             # - and wait a split second for things to stabilize
             WaitCommand(seconds=additionalTimeoutSeconds)
         )
-        # 2. assert that we have the correct requirements
-        assert set(self.requirements) == {elevator, arm}, "supposed to have {elevator, arm} requirements"
 
         # 3. make sure intake doesn't move when this command runs (when elevator/arm moves)
-        if intake is not None:
-            self.addRequirements(intake)
         self.tStart = 0
 
 
