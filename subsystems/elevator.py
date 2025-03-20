@@ -23,8 +23,8 @@ class ElevatorConstants:
     absEncoderRevolutionsPerInch = motorRevolutionsPerInch / GEAR_RATIO
 
     # other settings
-    leadMotorInverted = True
-    followMotorInverted = False
+    leadMotorInverted = False
+    followMotorInverted = True
     findingZeroSpeed = 0.1
 
     # calibrating? (at first, set it =True and calibrate all the constants above)
@@ -41,10 +41,10 @@ class ElevatorConstants:
     positionTolerance = 0.5
 
     # PID configuration (after you are done with calibrating=True)
-    kStaticGain = 0.03  # drop it by 50% when doubling kP
-    kP = 0.72 # 0.9 was our real choice  # at first make it very small like 0.05 and then start doubling
+    kStaticGain = 0.07  # drop it by 50% when doubling kP
+    kP = 0.32  # 0.72 was our real choice  # at first make it very small like 0.05 and then start doubling
     kD = 0.0  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
-    kMaxOutput = 0.95
+    kMaxOutput = 0.5
 
 
 class Elevator(Subsystem):
@@ -277,6 +277,9 @@ class Elevator(Subsystem):
         # 2. do we need to find zero?
         if not self.zeroFound:
             self.findZero()
+        elif self.reverseLimit.get() and not self.forwardLimit.get():
+            self.relativeEncoder.setPosition(0.0)  # reset the relative encoder again! (chain slipped?)
+
         # 3. report to the dashboard
         SmartDashboard.putString("elevStopReason", self.stopReason)
         SmartDashboard.putString("elevState", self.getState())
