@@ -20,6 +20,7 @@ from commands.intakecommands import IntakeGamepiece, AssumeIntakeLoaded, StartIn
 from commands.setcamerapipeline import SetCameraPipeline
 from commands.swervetopoint import SwerveMove, SwerveToPoint
 from commands.reset_xy import ResetXY
+from subsystems.elevator import ElevatorConstants
 
 # which trajectory to use
 BACKUP_METERS = 0.3
@@ -137,13 +138,13 @@ class AutoFactory(object):
         # 0. starting position for all autos
         self.startPos = SendableChooser()
         self.startPos.addOption("0: tug", (7.989, 7.75, -180))  # (x, y, headingDegrees)
-        self.startPos.addOption("1: L+", (7.189, 7.75, -180))  # (x, y, headingDegrees)
+        self.startPos.addOption("1: L+", (7.189, 6.177, -180))  # (x, y, headingDegrees)
         self.startPos.addOption("2: L", (6.98, 6.177, -142))  # (x, y, headingDegrees)
         self.startPos.setDefaultOption("3: ML", (7.189, 4.40, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("4: MID", (7.189, 4.025, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("5: MR", (7.189, 3.65, 180))  # (x, y, headingDegrees)
         self.startPos.addOption("6: R", (6.98, 1.897, 142))  # (x, y, headingDegrees)
-        self.startPos.addOption("7: R+", (7.189, 0.4, 180))  # (x, y, headingDegrees)
+        self.startPos.addOption("7: R+", (7.189, 1.897, 180))  # (x, y, headingDegrees)
 
         # goal 1
         #  - which reef to choose for goal 1
@@ -177,7 +178,7 @@ class AutoFactory(object):
 
         # how to drive between waypoints? (like a tank, like a frog, or what)
         self.autoTrajStyle = SendableChooser()
-        self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
+        #self.autoTrajStyle.addOption("tank", (JerkyTrajectory, "last-point"))
         self.autoTrajStyle.addOption("dog", (JerkyTrajectory, True))
         self.autoTrajStyle.setDefaultOption("eagle", (SwerveTrajectory, True))
 
@@ -304,7 +305,7 @@ class AutoFactory(object):
         feeder = constants.LeftFeeder
         headingTags = endpoint[2], autowaypoints.SideE.tags
 
-        approach = JerkyTrajectory(
+        approach = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
             speed=speed,
@@ -502,14 +503,14 @@ class AutoFactory(object):
         from subsystems.arm import ArmConstants
 
         if height == "intake" or height == "base":
-            return MoveElevatorAndArm(self.elevator, 0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel1, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         if height == "level 2":
-            return MoveElevatorAndArm(self.elevator, 6.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel2, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         if height == "level 3":
-            return MoveElevatorAndArm(self.elevator, 15.0, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel3, arm=self.arm, angle=ArmConstants.kArmSafeTravelAngle)
         if height == "level 4":
             angle = ArmConstants.kArmSafeTravelAngle if not final else ArmConstants.kArmLevel4ReleaseAngle
-            return MoveElevatorAndArm(self.elevator, 30.0, arm=self.arm, angle=angle)
+            return MoveElevatorAndArm(self.elevator, ElevatorConstants.heightOfLevel4, arm=self.arm, angle=angle)
 
         assert False, f"height='{height}' is not supported"
 
