@@ -28,13 +28,11 @@ from commands.swervetopoint import SwerveToSide, SwerveMove
 from constants import DriveConstants, OIConstants, RobotCameraLocations
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 from subsystems.arm import Arm, ArmConstants, safeArmAngleRange
-from subsystems.elevator import ElevatorConstants
 
 from commands.gotopoint import GoToPoint
 from commands.reset_xy import ResetXY, ResetSwerveFront
 
 from autofactory import AutoFactory
-from subsystems.elevator import ElevatorConstants
 
 
 class RobotContainer:
@@ -319,12 +317,16 @@ class RobotContainer:
 
             self.driverController.button(XboxController.Button.kX).whileTrue(
                self.approachReef(
-                   self.frontRightCamera, pushForwardSeconds=0.99, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                   self.frontRightCamera,
+                   pushForwardSeconds=1.17 * constants.ApproachReefTeleop.timeSeconds,
+                   cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                )
             )
             self.driverController.button(XboxController.Button.kB).whileTrue(
                 self.approachReef(
-                    self.frontLeftCamera, pushForwardSeconds=0.85, cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
+                    self.frontLeftCamera,
+                    pushForwardSeconds=constants.ApproachReefTeleop.timeSeconds,
+                    cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                 )
             )
             self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
@@ -370,7 +372,7 @@ class RobotContainer:
         levelA2PosButton = self.driverController.button(XboxController.Button.kY)
         levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator,
                                                 position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm,
-                                                angle=ArmConstants.kArmAlgaeIntakeAngle)
+                                                angle=ArmConstants.kArmAlgaeIntakeAngle, intake=self.intake)
         levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
 
 
@@ -469,7 +471,6 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.394, 5.83, -120),
             waypoints=[
-                (1.835, 6.265, -54),
                 (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.806, 6.243, -90),
@@ -489,7 +490,6 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(4.96, 5.81, -120),
             waypoints=[
-                (1.835, 6.265, -54),
                 (2.135, 6.365, -54),
                 (2.641, 5.922, -40),
                 (4.306, 6.243, -75),
@@ -622,7 +622,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.70, 3.85, 180)),
             waypoints=[
-                (1.835, 6.265, -54),
+                (1.735, 6.365, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (5.155, 1.916, 90),
@@ -643,7 +643,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.70, 4.20, 180)),
             waypoints=[
-                (1.835, 6.265, -54),
+                (1.735, 6.365, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (4.477, 1.906, 90),
@@ -664,7 +664,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(3.400, 5.546, -60.0),
             waypoints=[
-                (1.835, 6.265, -54),
+                (1.735, 6.365, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
@@ -682,7 +682,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(3.270, 5.446, -60.0),
             waypoints=[
-                (1.835, 6.265, -54),
+                (1.735, 6.365, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
@@ -768,8 +768,8 @@ class RobotContainer:
 
 
     def approachReef(self, camera, desiredHeading=None, cameraPoseOnRobot=None, pushForwardSeconds=None, finalApproachObjSize=10):
-        pushForwardMinDistance = 0.20
-        settings = {"GainTran": 0.63}
+        pushForwardMinDistance = constants.ApproachReefTeleop.minDistance
+        settings = {"GainTran": constants.ApproachReefTeleop.speedGain}
 
         def roundToMultipleOf60():
             # angles like 110 will be rounded to nearest multiple of 60, in this case 120
@@ -798,8 +798,8 @@ class RobotContainer:
         approachLike5895 = aimLike5895.andThen(ApproachTag(
             camera,
             self.robotDrive,
-            specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
             settings=settings,
+            specificHeadingDegrees=aimLike5895.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
@@ -810,8 +810,8 @@ class RobotContainer:
         approachLike1811 = aimLike1811.andThen(ApproachTag(
             camera,
             self.robotDrive,
-            specificHeadingDegrees=aimLike1811.getChosenHeadingDegrees,
             settings=settings,
+            specificHeadingDegrees=aimLike1811.getChosenHeadingDegrees,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
@@ -821,8 +821,8 @@ class RobotContainer:
         pickAnyTag = SetCameraPipeline(camera, 0, ())
         approachAnyTag = pickAnyTag.andThen(ApproachTag(camera,
             self.robotDrive,
-            specificHeadingDegrees=roundToMultipleOf60,
             settings=settings,
+            specificHeadingDegrees=roundToMultipleOf60,
             pushForwardSeconds=pushForwardSeconds,
             pushForwardMinDistance=pushForwardMinDistance,
             finalApproachObjSize=finalApproachObjSize
@@ -839,7 +839,7 @@ class RobotContainer:
         return command
 
 
-    def approachFeeder(self, pushForwardSeconds=0.1):
+    def approachFeeder(self, pushForwardSeconds=constants.ApproachFeederTeleop.timeSeconds):
 
         def desiredHeadingBackingToFeeder():
             angle = self.robotDrive.getHeading().degrees()
@@ -853,15 +853,11 @@ class RobotContainer:
             desiredHeadingBackingToFeeder,
             speed=1.0,
             reverse=True,
-            settings={"GainTran": 1.0},
+            settings={"GainTran": constants.ApproachFeederTeleop.speedGain},
             pushForwardSeconds=pushForwardSeconds,
-            pushForwardMinDistance=0.4,
+            pushForwardMinDistance=constants.ApproachFeederTeleop.minDistance,
             finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
             dashboardName="back",
-        )
-
-        moveBack = SwerveMove(
-            metersToTheLeft=0, metersBackwards=0.2, drivetrain=self.robotDrive, speed=1.0, slowDownAtFinish=False
         )
 
         return pipeline.andThen(command).withTimeout(10)
