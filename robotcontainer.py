@@ -28,6 +28,7 @@ from commands.swervetopoint import SwerveToSide, SwerveMove
 from constants import DriveConstants, OIConstants, RobotCameraLocations
 from subsystems.drivesubsystem import DriveSubsystem, BadSimPhysics
 from subsystems.arm import Arm, ArmConstants, safeArmAngleRange
+from subsystems.elevator import ElevatorConstants
 
 from commands.gotopoint import GoToPoint
 from commands.reset_xy import ResetXY, ResetSwerveFront
@@ -372,7 +373,7 @@ class RobotContainer:
         levelA2PosButton = self.driverController.button(XboxController.Button.kY)
         levelA2PositionCmd = MoveElevatorAndArm(elevator=self.elevator,
                                                 position=ArmConstants.kArmAlgaeElevatorPosition2, arm=self.arm,
-                                                angle=ArmConstants.kArmAlgaeIntakeAngle, intake=self.intake)
+                                                angle=ArmConstants.kArmAlgaeIntakeAngle)
         levelA2PosButton.whileTrue(levelA2PositionCmd.andThen(IntakeEjectGamepieceBackward(self.intake, 0.2)))
 
 
@@ -471,7 +472,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(5.394, 5.83, -120),
             waypoints=[
-                (2.135, 6.365, -54),
+                (1.835, 6.265, -54),
                 (2.641, 5.922, -40),
                 (4.806, 6.243, -90),
             ],
@@ -490,7 +491,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(4.96, 5.81, -120),
             waypoints=[
-                (2.135, 6.365, -54),
+                (1.835, 6.265, -54),
                 (2.641, 5.922, -40),
                 (4.306, 6.243, -75),
             ],
@@ -508,13 +509,12 @@ class RobotContainer:
         goSideCLeftBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(5.045, 2.611, 120.0),
-            waypoints=[
-                (1.285, 1.135, 54.0),
-                (2.336, 1.911, -10.119),
-                (3.777, 1.520, 0.302),
-                (5.045, 1.741, 50.001),
-            ],
+            endpoint=mirror((4.96, 5.81, -120)),
+            waypoints=mirror([
+                (1.835, 6.265, -54),
+                (2.641, 5.922, -40),
+                (4.306, 6.243, -75),
+            ]),
             speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
@@ -528,13 +528,12 @@ class RobotContainer:
         goSideCRightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(5.454, 2.724, 120.0),
-            waypoints=[
-                (1.285, 1.135, 54.0),
-                (2.336, 1.911, -10.119),
-                (3.777, 1.520, 0.302),
-                (5.045, 1.741, 50.001),
-            ],
+            endpoint=mirror((5.394, 5.83, -120)),
+            waypoints=mirror([
+                (1.835, 6.265, -54),
+                (2.641, 5.922, -40),
+                (4.806, 6.243, -90),
+            ]),
             speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
@@ -566,7 +565,7 @@ class RobotContainer:
         goSideARightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(2.072, 3.571, 0),
+            endpoint=(2.072, 3.621, 0),
             waypoints=[
                 (1.435, 6.765, -54),
                 (1.641, 5.622, -54),
@@ -584,11 +583,11 @@ class RobotContainer:
         goSideBLeftBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(3.450, 2.574, 60.0),
-            waypoints=[
-                (1.285, 1.135, 54.0),
-                (2.201, 1.986, 54.0),
-            ],
+            endpoint=mirror((3.270, 5.446, -60.0)),
+            waypoints=mirror([
+                (1.835, 6.265, -54),
+                (2.641, 5.922, -40),
+            ]),
             speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
@@ -602,11 +601,11 @@ class RobotContainer:
         goSideBRightBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(3.660, 2.265, 60.0),
-            waypoints=[
-                (1.285, 1.135, 54.0),
-                (2.201, 1.986, 54.0),
-            ],
+            endpoint=mirror((3.450, 5.496, -60.0)),
+            waypoints=mirror([
+                (1.835, 6.265, -54),
+                (2.641, 5.922, -40),
+            ]),
             speed=speed,
             setup=prepareToBackIntoRightFeeder,
         )
@@ -622,7 +621,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.70, 3.85, 180)),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (5.155, 1.916, 90),
@@ -643,7 +642,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=mirror((6.70, 4.20, 180)),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
             ] + mirror([
                 (2.201, 1.986, 54.0),
                 (4.477, 1.906, 90),
@@ -662,9 +661,9 @@ class RobotContainer:
         goSideFLeftBranch = TrajectoryCommand(
             drivetrain=self.robotDrive,
             swerve=swerve,
-            endpoint=(3.400, 5.546, -60.0),
+            endpoint=(3.450, 5.496, -60.0),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
@@ -682,7 +681,7 @@ class RobotContainer:
             swerve=swerve,
             endpoint=(3.270, 5.446, -60.0),
             waypoints=[
-                (1.735, 6.365, -54),
+                (1.835, 6.265, -54),
                 (2.641, 5.922, -40),
             ],
             speed=speed,
