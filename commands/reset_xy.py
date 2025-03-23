@@ -5,7 +5,7 @@ from wpimath.geometry import Rotation2d, Pose2d, Translation2d
 
 
 class ResetXY(commands2.Command):
-    def __init__(self, x, y, headingDegrees, drivetrain):
+    def __init__(self, x, y, headingDegrees, drivetrain, resetGyro=True):
         """
         Reset the starting (X, Y) and heading (in degrees) of the robot to where they should be.
         :param x: X
@@ -14,12 +14,23 @@ class ResetXY(commands2.Command):
         :param drivetrain: drivetrain on which the (X, Y, heading) should be set
         """
         super().__init__()
+
         self.drivetrain = drivetrain
-        self.position = Pose2d(Translation2d(x, y), Rotation2d.fromDegrees(headingDegrees))
         self.addRequirements(drivetrain)
 
+        self.resetGyro = resetGyro
+        self.headingDegrees = headingDegrees
+        self.x = x
+        self.y = y
+
     def initialize(self):
-        self.drivetrain.resetOdometry(self.position)
+        heading = self.headingDegrees
+        if heading is None:
+            heading = self.drivetrain.getPose().rotation().degrees()
+        elif callable(heading):
+            heading = heading()
+        position = Pose2d(Translation2d(self.x, self.y), Rotation2d.fromDegrees(heading))
+        self.drivetrain.resetOdometry(position, resetGyro=self.resetGyro)
 
     def isFinished(self) -> bool:
         return True  # this is an instant command, it finishes right after it initialized

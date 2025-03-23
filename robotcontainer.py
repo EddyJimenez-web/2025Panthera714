@@ -19,7 +19,7 @@ from robotpy_apriltag import AprilTagFieldLayout
 from wpilib import XboxController, SendableChooser, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
-from commands.approach import ApproachTag
+from commands.approach import ApproachTag, ApproachManually
 from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
@@ -269,19 +269,18 @@ class RobotContainer:
         # if "start" pressed, reset X,Y position to the **lower** feeding station (x=1.30, y=6.90, 54 degrees **west**)
         startButton = self.driverController.button(XboxController.Button.kStart)
         # feeder locations:
+        startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
         #startButton.onTrue(ResetXY(x=1.285, y=1.135, headingDegrees=+54, drivetrain=self.robotDrive))
-        #startButton.onTrue(ResetXY(x=1.285, y=6.915, headingDegrees=-54, drivetrain=self.robotDrive))
+
         # feeder locations:
-        self.driverController.povRight().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose, resetGyro=False)))
-        self.driverController.povLeft().onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose, resetGyro=False)))
+        self.driverController.button(XboxController.Button.kRightBumper).onTrue(
+            ResetXY(*constants.RightFeeder.point, headingDegrees=None, resetGyro=False, drivetrain=self.robotDrive)
+        )
+        self.driverController.button(XboxController.Button.kLeftBumper).onTrue(
+            ResetXY(*constants.LeftFeeder.point, headingDegrees=None, resetGyro=False, drivetrain=self.robotDrive)
+        )
+        # ^^ this (X,Y) is the right feeding station for today's practice
 
-        # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.LeftFeeder.pose)))
-        # startButton.onTrue(InstantCommand(lambda: self.robotDrive.resetOdometry(constants.RightFeeder.pose)))
-
-        # ^^ this (Y,Y) is the right feeding station for today's practice
-
-        # if someone pushes left trigger of scoring controller more than 50%, use sticks to drive FPV
-        self.configureFpvDriving(self.driverController, speed=0.3)
         if self.scoringController != self.driverController:
             self.configureFpvDriving(self.scoringController, speed=0.3)
 
@@ -294,23 +293,12 @@ class RobotContainer:
         intakeCmd = AutoFactory.intakeGamepiece(self, speed=0.115)  # .onlyIf(goToIntakePositionCmd.succeeded)
         intakingPosButton.whileTrue(goToIntakePositionCmd.andThen(intakeCmd))
 
-        # right bumper for driver joystick = keep wheels locked in X brake
-        if self.driverController != self.scoringController:
-            xBrakeButton = self.driverController.button(XboxController.Button.kRightBumper)
-            keepWheelsLocked = RunCommand(self.robotDrive.setX, self.robotDrive)
-            xBrakeButton.whileTrue(keepWheelsLocked)
-
         # pull the right trigger = eject to score that gamepiece
         ejectButton = self.scoringController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
         ejectForwardIfElevatorLow = IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3)
         ejectForwardIfElevatorHigh = MoveArm(self.arm, ArmConstants.kArmLevel4ReleaseAngle).andThen(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
         ejectForwardCmd = cmd.ConditionalCommand(ejectForwardIfElevatorHigh, ejectForwardIfElevatorLow, lambda: self.elevator.getPosition() > 20)
         ejectButton.whileTrue(ejectForwardCmd)
-
-        # driver can eject algae by pressing right trigger
-        if self.scoringController != self.driverController:
-            ejectButtonDriver = self.driverController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.5)
-            ejectButtonDriver.whileTrue(IntakeFeedGamepieceForward(self.intake, speed=0.3).withTimeout(0.3))
 
         # pull the left trigger = spin the intake in reverse direction
         ejectBackwardsButton = self.scoringController.axisGreaterThan(XboxController.Axis.kLeftTrigger, 0.5)
@@ -338,9 +326,21 @@ class RobotContainer:
                     cameraPoseOnRobot=RobotCameraLocations.kFrontLeft
                 )
             )
-            self.driverController.button(XboxController.Button.kRightBumper).whileTrue(
-                self.approachFeeder()
+
+            # right and left trigger = approach right or left feeder, manually
+            self.driverController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.1).whileTrue(
+                self.approachFeeder(
+                    headingDegrees=+54,  # right feeder
+                    speed=lambda: 0.7 * self.driverController.getRawAxis(XboxController.Axis.kRightTrigger)
+                )
             )
+            self.driverController.axisGreaterThan(XboxController.Axis.kLeftTrigger, 0.1).whileTrue(
+                self.approachFeeder(
+                    headingDegrees=-54,  # left feeder
+                    speed=lambda: 0.7 * self.driverController.getRawAxis(XboxController.Axis.kLeftTrigger)
+                )
+            )
+
 
     def configureElevatorButtons(self):
         from commands.intakecommands import IntakeEjectGamepieceBackward
@@ -421,15 +421,15 @@ class RobotContainer:
         self.driverController.povUp().whileTrue(self.trajectoryPicker)
 
         # POV left+right: pick trajectory
-        #self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
-        #self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
+        self.driverController.povLeft().onTrue(InstantCommand(self.trajectoryPicker.previousTrajectory))
+        self.driverController.povRight().onTrue(InstantCommand(self.trajectoryPicker.nextTrajectory))
 
         self.reversedTrajectoryPicker = ReversedTrajectoryPicker(self.trajectoryPicker, subsystems=[self.robotDrive])
         backUp = SwerveMove(metersToTheLeft=0, metersBackwards=0.15, drivetrain=self.robotDrive, speed=0.5, slowDownAtFinish=False)
 
         #armDown = MoveElevatorAndArm(self.elevator, position=0.0, arm=self.arm, angle=ArmConstants.kArmIntakeAngle)
         #reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker.alongWith(armDown))
-        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker).andThen(self.approachFeeder())
+        reverseTrajectory = backUp.andThen(self.reversedTrajectoryPicker)
 
         # (when button is pushed, first back up safely and then drive the reverse trajectory)
 
@@ -822,25 +822,16 @@ class RobotContainer:
         return command
 
 
-    def approachFeeder(self, pushForwardSeconds=constants.ApproachFeederTeleop.timeSeconds):
-
-        def desiredHeadingBackingToFeeder():
-            angle = self.robotDrive.getHeading().degrees()
-            return -54 if angle < 0 else +54  # are we facing the right feeder?
-
+    def approachFeeder(self, headingDegrees, speed):
         pipeline = SetCameraPipeline(self.rearCamera, 0, onlyTagIds=(1, 2, 12, 13))
 
-        command = ApproachTag(
+        command = ApproachManually(
             self.rearCamera,
             self.robotDrive,
-            desiredHeadingBackingToFeeder,
-            speed=1.0,
+            speed=speed,
+            specificHeadingDegrees=headingDegrees,
             reverse=True,
             settings={"GainTran": constants.ApproachFeederTeleop.speedGain},
-            pushForwardSeconds=pushForwardSeconds,
-            pushForwardMinDistance=constants.ApproachFeederTeleop.minDistance,
-            finalApproachObjSize=2.5,  # calibrated with Eric, Enrique and Davi
-            dashboardName="back",
         )
 
-        return pipeline.andThen(command).withTimeout(10)
+        return pipeline.andThen(command)
