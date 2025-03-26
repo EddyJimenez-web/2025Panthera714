@@ -19,7 +19,7 @@ from robotpy_apriltag import AprilTagFieldLayout
 from wpilib import XboxController, SendableChooser, SmartDashboard
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 import constants
-from commands.approach import ApproachTag
+from commands.approach import ApproachTag, ApproachManually
 from commands.elevatorcommands import MoveElevatorAndArm
 
 from commands.jerky_trajectory import JerkyTrajectory, SwerveTrajectory, mirror
@@ -859,3 +859,17 @@ class RobotContainer:
 
         return command
 
+
+    def approachFeeder(self, headingDegrees, speed):
+        pipeline = SetCameraPipeline(self.rearCamera, 0, onlyTagIds=(1, 2, 12, 13))
+
+        command = ApproachManually(
+            self.rearCamera,
+            self.robotDrive,
+            speed=speed,
+            specificHeadingDegrees=headingDegrees,
+            reverse=True,
+            settings={"GainTran": constants.ApproachFeederTeleop.speedGain},
+        )
+
+        return pipeline.andThen(command)
