@@ -43,7 +43,7 @@ class Tunable:
                     self.chooser.setDefaultOption(label, value)
                 else:
                     self.chooser.addOption(label, value)
-        SmartDashboard.putData(name, self.chooser)
+        SmartDashboard.putData(prefix + name, self.chooser)
 
     def fetch(self):
         if self.chooser is not None:
@@ -69,7 +69,7 @@ class ApproachTag(commands2.Command):
         finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
         cameraMinimumFps=4.0,
-        dashboardName="apch"
+        dashboardName=""
     ):
         """
         Align the swerve robot to AprilTag precisely and then optionally slowly push it forward for a split second
@@ -158,12 +158,18 @@ class ApproachTag(commands2.Command):
         # shape pre final approach: 2 = use parabola for before-final-approach trajectory, 3.0 = use cubic curve, etc.
         self.APPROACH_SHAPE = Tunable(settings, prefix, "TrjShape", 3.0, (2.0, 8.0))
 
+        self.APPROACH_SQRTCTRL = Tunable(settings, prefix, "SqrtCtrl", 1.0, (0.0, 1.0))
+
+        self.OUT_OF_SIGHT_ALLOWED = Tunable(settings, prefix, "AllowOOS", 1.0, (0.0, 1.0))
+
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
             self.DESIRED_HEADING_RADIUS,
             self.KPMULT_TRANSLATION,
             self.KPMULT_ROTATION,
             self.APPROACH_SHAPE,
+            self.APPROACH_SQRTCTRL,
+            self.OUT_OF_SIGHT_ALLOWED,
         ]
         if isinstance(self.pushForwardSeconds, Tunable):
             self.tunables.append(self.pushForwardSeconds)
@@ -276,16 +282,25 @@ class ApproachTag(commands2.Command):
                     fwdSpeed = math.copysign(GoToPointConstants.kMinTranslateSpeed, self.finalApproachSpeed)
             leftSpeed *= max(0.0, 1 - visionOld * visionOld)  # final approach: dial down the left speed if no object
         else:
-            # - otherwise slow down if the visual estimate is old or if heading is not right yet
+            # - slow down if the visual estimate is old, if heading is not right yet, or if rotating away
+            closeToEdge = 0
+            if self.everSawObject and self.OUT_OF_SIGHT_ALLOWED.value == 0 and self.lastSeenObjectX * rotationSpeed > 0:
+                closeToEdge = abs(self.lastSeenObjectX) / 5.0  # rotating away from the object in frame? slow this down!
             farFromDesiredHeading = abs(degreesLeftToRotate) / self.DESIRED_HEADING_RADIUS.value
+
             if farFromDesiredHeading >= 1:
                 warnings = "large heading error"
+            if closeToEdge >= 1:
+                warnings = "close to frame edge"
             if visionOld >= 1:
                 warnings = "temporarily out of sight"
             # any other reason to slow down? put it above
 
-            problems = max((visionOld, farFromDesiredHeading))
-            fwdSpeed *= max((0.0, 1.0 - problems * problems))
+            fwdSpeed *= max(0.0, 1 - max(farFromDesiredHeading, closeToEdge, visionOld))
+
+            if self.OUT_OF_SIGHT_ALLOWED.value == 0:
+                leftSpeed *= max(0.0, 1 - visionOld)
+                rotationSpeed *= max(0.0, 1 - max(visionOld, closeToEdge))
 
         # 5. drive!
         if self.reverse:
@@ -314,8 +329,7 @@ class ApproachTag(commands2.Command):
 
         # 2. proportional control: if we are almost finished turning, use slower turn speed (to avoid overshooting)
         proportionalSpeed = self.KPMULT_ROTATION.value * AimToDirectionConstants.kP * abs(degreesRemaining)
-        if AimToDirectionConstants.kUseSqrtControl:
-            proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
+        proportionalSpeed = math.sqrt(0.5 * proportionalSpeed)  # will match the non-sqrt value when 50% max speed
 
         # 3. if target angle is on the right, we should really turn right (negative turn speed)
         turnSpeed = min([proportionalSpeed, 1.0])
@@ -400,8 +414,12 @@ class ApproachTag(commands2.Command):
     def computeProportionalSpeed(self, distance) -> float:
         kpMultTran = self.KPMULT_TRANSLATION.value
         velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
-        if GoToPointConstants.kUseSqrtControl:
+        sqrtCtrl = self.APPROACH_SQRTCTRL.value
+        if sqrtCtrl >= 1:
             velocity = math.sqrt(0.5 * velocity * kpMultTran)
+        else:
+            finalApproachValue = max(velocity, math.sqrt(0.5 * velocity * kpMultTran) * sqrtCtrl)
+            velocity = min(finalApproachValue, velocity)
         if velocity > self.approachSpeed:
             velocity = self.approachSpeed
         if velocity < GoToPointConstants.kMinTranslateSpeed:
