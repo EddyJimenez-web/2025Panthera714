@@ -127,6 +127,8 @@ class ApproachTag(commands2.Command):
         self.lastSeenObjectSize = 0.0
         self.lastSeenDistanceToTag = None
         self.everSawObject = False
+        self.everSawPositiveY = False
+        self.everSawNegativeY = False
         self.tReachedGlidePath = 0.0  # time when aligned to the tag and desired direction for the first time
         self.tReachedFinalApproach = 0.0  # time when reached the final approach
         self.xyReachedFinalApproach = Translation2d(0, 0)
@@ -196,6 +198,8 @@ class ApproachTag(commands2.Command):
         self.lastSeenDistanceToTag = 999
         self.lastSeenObjectTime = Timer.getFPGATimestamp()
         self.everSawObject = False
+        self.everSawPositiveY = False
+        self.everSawNegativeY = False
         self.finished = ""
 
         # final approach parameters
@@ -375,6 +379,12 @@ class ApproachTag(commands2.Command):
 
         # where are we?
         robotX, robotY, tagX = self.localize()
+        if robotY > 0 and not self.everSawPositiveY:
+            self.everSawPositiveY = True
+            print("positive Y: {}".format(robotY))
+        if robotY < 0 and not self.everSawNegativeY:
+            self.everSawNegativeY = True
+            print("negative Y: {}".format(robotY))
 
         # have we reached the final approach point now? (must already be on glide path, otherwise it doesn't count)
         if self.tReachedGlidePath != 0 and self.tReachedFinalApproach == 0 and robotX > 0:
@@ -414,6 +424,8 @@ class ApproachTag(commands2.Command):
 
     def computeProportionalSpeed(self, distance) -> float:
         kpMultTran = self.KPMULT_TRANSLATION.value
+        if not (self.everSawNegativeY and self.everSawPositiveY):
+            kpMultTran *= 1.5  # try to go faster if we don't have evidence that we are overshooting
         velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
         sqrtCtrl = self.APPROACH_SQRTCTRL.value
         if sqrtCtrl >= 1:
