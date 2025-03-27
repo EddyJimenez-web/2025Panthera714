@@ -23,16 +23,16 @@ class ApproachReefTeleop:
     """
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
-    timeSeconds = 0.83  # increase if failing to approach from far away
-    minDistance = 0.24  # increase if failing to approach from close distance
+    timeSeconds = 0.9  # increase if failing to approach from far away
+    minDistance = 0.25  # increase if failing to approach from close distance
 
 class ApproachReefAutonomous:
     """
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
-    timeSeconds = 1.5  # increase if failing to approach from far away
-    minDistance = 0.30  # *slightly* increase if failing to approach from close distance
-    speedGain = 0.6  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
+    timeSeconds = 0.7  # 0.85 was fine, trying lower ( increase if failing to approach from far away )
+    minDistance = 0.5  # *slightly* increase if failing to approach from close distance
+    speedGain = 0.5  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
     delayBeforeRaisingElevator = 1.2  # seconds
 
 class ApproachFeederTeleop:
@@ -47,10 +47,10 @@ class ApproachFeederAutonomous:
     """
     how much further to drive, after the robot reaches the final approach point and (possibly) loses sight of object?
     """
-    timeSeconds = 0.20  # increase if failing to approach from far away
+    timeSeconds = 0.12  # increase if failing to approach from far away
     minDistance = 0.28  # *slightly* increase if failing to approach from close distance
     speedGain = 1.1  # increase if you want to approach faster and less precisely (then also drop `timeSeconds` above)
-    toleranceInches = 14  # plus minus right-left tolerance
+    toleranceInches = 14  # plus minus left-right tolerance
 
 
 class NeoMotorConstants:
@@ -148,7 +148,7 @@ class ModuleConstants:
     kTurningEncoderInverted = False
     kTurningMotorInverted = True
 
-    kWheelDiameterMeters = units.inchesToMeters(4) * 1.07  # MK4i/MK4n: 4 inches, MAXSwerve: 3 inches
+    kWheelDiameterMeters = units.inchesToMeters(4) * 0.875 * 1.05  # MK4i/MK4n: 4 inches, MAXSwerve: 3 inches
     # ^^ might need to be multiplied by 0.93 instead of 1.00 if we believe Eric's calibration
 
     # Calculations required for driving motor conversion factors and feed forward
@@ -226,12 +226,14 @@ def makePose(x, y, heading):
 
 class LeftFeeder:
     location = (1.285, 6.917, -54)
+    xy = (location[0], location[1],)
     pose = makePose(*location)
     tags = (1, 13)
 
 
 class RightFeeder:
     location = (1.285, 1.135, +54)
+    xy = (location[0], location[1],)
     pose = makePose(*location)
     tags = (2, 12)
 
