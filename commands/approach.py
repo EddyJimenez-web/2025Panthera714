@@ -293,7 +293,7 @@ class ApproachTag(commands2.Command):
             if closeToEdge >= 1:
                 warnings = "close to frame edge"
             if visionOld >= 1:
-                warnings = "temporarily out of sight"
+                warnings = f"temporarily out of sight (for {(now - self.lastSeenObjectTime)}s, last seen {self.lastSeenObjectTime})"
             # any other reason to slow down? put it above
 
             fwdSpeed *= max(0.0, 1 - max(farFromDesiredHeading, closeToEdge, visionOld))
@@ -586,11 +586,18 @@ class ApproachManually(commands2.Command):
         print(f"ApproachTag: translation gain value {self.KPMULT_TRANSLATION.value}")
 
         self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
+
         self.everSawObject = False
         self.lastSeenObjectX = 0.0
         self.lastSeenObjectSize = 0.0
         self.lastSeenDistanceToTag = 999
         self.lastSeenObjectTime = Timer.getFPGATimestamp()
+
+        self.tReachedGlidePath = 0.0  # time when aligned to the tag and desired direction for the first time
+        self.tReachedFinalApproach = 0.0  # time when reached the final approach
+        self.xyReachedFinalApproach = Translation2d(0, 0)
+        self.lostTag = ""
+        self.finished = ""
 
         SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
 
