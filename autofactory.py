@@ -200,6 +200,7 @@ class AutoFactory(object):
         self.autoApproachSpeed.addOption("0.5", 0.45)
         self.autoApproachSpeed.addOption("0.7", 0.7)
         self.autoApproachSpeed.setDefaultOption("0.85", 0.85)
+        self.autoApproachSpeed.addOption("0.93", 0.93)
         self.autoApproachSpeed.addOption("1.0", 1.0)
         self.autoApproachSpeed.addOption("1.15", 1.15)
         self.autoApproachSpeed.addOption("1.30", 1.30)
