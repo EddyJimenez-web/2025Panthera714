@@ -158,8 +158,6 @@ class ApproachTag(commands2.Command):
         # shape pre final approach: 2 = use parabola for before-final-approach trajectory, 3.0 = use cubic curve, etc.
         self.APPROACH_SHAPE = Tunable(settings, prefix, "TrjShape", 3.0, (2.0, 8.0))
 
-        self.APPROACH_SQRTCTRL = Tunable(settings, prefix, "SqrtCtrl", 1.0, (0.0, 1.0))
-
         self.OUT_OF_SIGHT_ALLOWED = Tunable(settings, prefix, "AllowOOS", 1.0, (0.0, 1.0))
 
         self.tunables = [
@@ -168,7 +166,6 @@ class ApproachTag(commands2.Command):
             self.KPMULT_TRANSLATION,
             self.KPMULT_ROTATION,
             self.APPROACH_SHAPE,
-            self.APPROACH_SQRTCTRL,
             self.OUT_OF_SIGHT_ALLOWED,
         ]
         if isinstance(self.pushForwardSeconds, Tunable):
@@ -228,7 +225,7 @@ class ApproachTag(commands2.Command):
         # good ways to finish
         elif self.tReachedFinalApproach != 0:
             length = (self.drivetrain.getPose().translation() - self.xyReachedFinalApproach).norm()
-            if length > self.finalApproachMinDistance and now > self.tReachedFinalApproach + self.finalApproachSeconds:
+            if now > self.tReachedFinalApproach + self.finalApproachSeconds:
                 self.finished = f"approached within {now - self.tReachedFinalApproach}s, drove {length}m"
 
         if not self.finished:
@@ -276,7 +273,8 @@ class ApproachTag(commands2.Command):
                 completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
                 if self.finalApproachMinDistance > 0:
                     completedDistance = (self.drivetrain.getPose().translation() - self.xyReachedFinalApproach).norm()
-                    completedPercentage = min(completedPercentage, completedDistance / self.finalApproachMinDistance)
+                    if completedDistance < self.finalApproachMinDistance:
+                        completedPercentage = 0.0  # if min distance is not met, don't even slow down
                 fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
                 if abs(fwdSpeed) < GoToPointConstants.kMinTranslateSpeed:
                     fwdSpeed = math.copysign(GoToPointConstants.kMinTranslateSpeed, self.finalApproachSpeed)
@@ -414,12 +412,7 @@ class ApproachTag(commands2.Command):
     def computeProportionalSpeed(self, distance) -> float:
         kpMultTran = self.KPMULT_TRANSLATION.value
         velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
-        sqrtCtrl = self.APPROACH_SQRTCTRL.value
-        if sqrtCtrl >= 1:
-            velocity = math.sqrt(0.5 * velocity * kpMultTran)
-        else:
-            finalApproachValue = max(velocity, math.sqrt(0.5 * velocity * kpMultTran) * sqrtCtrl)
-            velocity = min(finalApproachValue, velocity)
+        velocity = math.sqrt(0.5 * velocity * kpMultTran)
         if velocity > self.approachSpeed:
             velocity = self.approachSpeed
         if velocity < GoToPointConstants.kMinTranslateSpeed:
