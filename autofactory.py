@@ -430,9 +430,9 @@ class AutoFactory(object):
         camera = self.frontLeftCamera if branch == "right" else self.frontRightCamera
         approachSpeedFactor = self.autoApproachSpeed.getSelected()
 
-        # limelight is slower
+        # limelight is not much slower
         if branch == "left":
-            pushFwdSeconds *= 1.3
+            pushFwdSeconds *= 1.15
         settings = {
             "GainTran": constants.ApproachReefAutonomous.speedGain * approachSpeedFactor,
             "SqrtCtrl": 1.0,  # default square root control
