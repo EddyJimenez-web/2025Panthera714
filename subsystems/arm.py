@@ -58,7 +58,7 @@ def safeArmAngleRange(elevatorPosition: float):
     if elevatorPosition < 0.5:
         return 32 + offset, 160 + offset
     elif elevatorPosition < 29:
-        return 65 + offset, 75 + offset
+        return 65 + offset, 76.3 + offset
     else:
         return 35 + offset, 160 + offset
 
